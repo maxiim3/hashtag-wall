@@ -11,7 +11,7 @@ export class BuildPost {
 	indexedAt: string;
 
 	constructor(props: Partial<PostView>) {
-		this.id = props.cid!;
+		this.id = props.uri!;
 		this.author = props.author?.displayName || '';
 		this.text = String(props.record?.text) || '';
 		this.replyCount = props.replyCount;
@@ -22,29 +22,39 @@ export class BuildPost {
 	}
 }
 
+export interface TagStat {
+	like: number;
+	repost: number;
+	quote: number;
+	count: number;
+	reply: number;
+	name: string;
+}
+
 export class Feed {
 	tags: Set<string> = new Set();
 	countTags: Map<string, number> = new Map();
 	tagRgx = /(#).+?(\s|$)/gs;
 	posts: BuildPost[];
+	private tagStat: Map<string, TagStat> = new Map();
 
 	constructor(res: PostView[]) {
 		this.posts = res.map((r) => new BuildPost(r));
+		this._keepUniqPosts();
+		this._tagStats();
 		this.extractTags();
 		this._countTags();
 	}
 
-	countLikes = () => {
-		this.posts.reduce((acc, post) => (post.likeCount || 0) + acc, 0);
-	};
+	private _keepUniqPosts() {
+		const s = new Map<string, BuildPost>();
 
-	countReply = () => {
-		this.posts.reduce((acc, post) => (post.replyCount || 0) + acc, 0);
-	};
-
-	countRepost = () => {
-		this.posts.reduce((acc, post) => (post.repostCount || 0) + acc, 0);
-	};
+		this.posts.forEach((p) => {
+			if (s.has(p.id)) return;
+			s.set(p.id, p);
+		});
+		this.posts = Array.from(s.values());
+	}
 
 	private extractTags = () => {
 		this.posts.forEach((p) => {
@@ -66,5 +76,50 @@ export class Feed {
 				}
 			});
 		});
+	};
+
+	private _tagStats = () => {
+		for (const post of this.posts) {
+			const tags = post.text.match(this.tagRgx)!;
+			tags?.forEach((_tag) => {
+				const tag = _tag.toLowerCase().trim().replaceAll(',', '').replaceAll('.', '');
+				if (this.tagStat.has(tag)) {
+					const saveStat = this.tagStat.get(tag)!;
+					this.tagStat.set(tag, {
+						count: saveStat.count + 1,
+						like: saveStat.like + post.likeCount!,
+						quote: saveStat.quote + post.quoteCount!,
+						repost: saveStat.repost + post.repostCount!,
+						reply: saveStat.reply + post.replyCount!,
+						name: tag
+					});
+				} else {
+					this.tagStat.set(tag, {
+						count: 1,
+						like: post.likeCount!,
+						quote: post.quoteCount!,
+						repost: post.repostCount!,
+						reply: post.replyCount!,
+						name: tag
+					});
+				}
+			});
+		}
+	};
+
+	tagStatistic() {
+		return Array.from(this.tagStat.values());
+	}
+
+	countLikes = () => {
+		this.posts.reduce((acc, post) => (post.likeCount || 0) + acc, 0);
+	};
+
+	countReply = () => {
+		this.posts.reduce((acc, post) => (post.replyCount || 0) + acc, 0);
+	};
+
+	countRepost = () => {
+		this.posts.reduce((acc, post) => (post.repostCount || 0) + acc, 0);
 	};
 }

@@ -36,14 +36,25 @@ async function fetchSearchPosts(q: Record<string, string>) {
 export const actions: Actions = {
 	default: async ({ request }: { request: Request }) => {
 		const data = await request.formData();
-		const query = {
+		const text = data.get('search') as string;
+		const latestQ = {
+			limit: '100',
+			sort: 'latest',
+			q: text
+		};
+		const { results: latestResults } = await fetchSearchPosts(latestQ);
+
+		const topQ = {
 			limit: '100',
 			sort: 'top',
-			q: data.get('search') as string
+			q: text
 		};
-		const { results } = await fetchSearchPosts(query);
-		console.log('action', results);
+		const { results: topResults } = await fetchSearchPosts(topQ);
+		console.log('action', latestResults);
 
-		return { results: results.posts };
+		return {
+			results: [...topResults.posts, ...latestResults.posts],
+			search: text
+		};
 	}
 };
