@@ -2,18 +2,17 @@
 	import { Feed, type TagStat } from '$lib/models/post.response';
 	import type { PageProps } from './$types';
 	import { enhance } from '$app/forms';
+	import { sortResponseBy } from '$lib/us/sortResponseBy.us';
 
-	let { form }: PageProps = $props();
+	let { form, data }: PageProps = $props();
 
 	let search = $state();
 	let sortLabel = $state<keyof TagStat>('count');
 
 	let searchIdl = $derived(form && form.search);
-	let feed = $derived(new Feed(form?.results || []));
-	let count = $derived(feed.posts.length || 0);
-	let sortedFeed = $derived(
-		feed.tagStatistic().sort((a: TagStat, b: TagStat) => (a[sortLabel] - b[sortLabel]) * -1)
-	);
+	let tags = $derived(form?.results || []);
+	let count = $derived(tags.length || 0);
+	let sortedFeed = $derived(sortResponseBy<TagStat>(tags, sortLabel));
 
 	function handleSort(label: keyof TagStat) {
 		sortLabel = label;
@@ -25,14 +24,37 @@
 	}
 </script>
 
-<main class="flex flex-col items-center gap-8 p-1 sm:p-4">
-	<h1 class="mt-12 text-xl font-bold">Bluesky Hashtag wall</h1>
-	<section>
-		<form method="POST" use:enhance>
-			<input name="search" bind:value={search} required placeholder="#trending-tag" />
-			<p class="pl-2 text-sm text-slate-500 italic">Look for a specific hashtag</p>
+<main class="mx-auto flex min-h-lvh max-w-[500px] flex-col items-center gap-2 border-x">
+	<header class="relative">
+		<img src="https://placehold.co/600x400" alt="placeholder" />
+		<div class="flex h-16 items-center justify-end border-b border-black/20 p-2">
+			<img
+				class="absolute bottom-2 left-2 w-32 rounded-full border-4 border-white"
+				src="https://avatar.iran.liara.run/public/3"
+				alt="placeholder avatar"
+			/>
+			<h2 class="text-xl font-light">{`@${data.username}`}</h2>
+		</div>
+	</header>
+
+	<section class="prose text-center">
+		<h1 class="text-xl font-bold">Better Post</h1>
+		<p>Optimise your reach</p>
+	</section>
+
+	<section class="my-12">
+		<p class="prose p-2 text-center text-sm text-slate-500 italic">
+			Enter a few keywords and get <br /> the most used hashtags.
+		</p>
+		<form class="flex flex-col items-center gap-2" method="POST" use:enhance>
+			<input
+				bind:value={search}
+				class="rounded-[50px] border-black/20 placeholder:text-sm"
+				name="search"
+				required
+				placeholder="Enter a context"
+			/>
 			<div class="flex flex-col items-center gap-2">
-				<p>Search for <bold class="font-bold">{form?.search || search}</bold></p>
 				<p>results: <bold class="font-bold">{count}</bold></p>
 				<button type="reset" class=" rounded-sm border p-1" onclick={resetSearch}>reset</button>
 			</div>
@@ -40,10 +62,14 @@
 	</section>
 
 	{#if searchIdl}
+		<p>
+			for <code class="rounded-xl bg-slate-200 px-2 py-0.5 font-mono text-sm">{searchIdl}</code>,
+			the most used tags are
+		</p>
 		{@const styles = 'flex w-full gap-4 items-center px-2'}
 		<!-- Result table -->
-		{#key feed}
-			<ul class="w-2/3" class:mt-3={searchIdl}>
+		{#key sortLabel}
+			<ul class="w-full" class:mt-3={searchIdl}>
 				<li class={[styles, 'top-0 bg-white/20 py-2 backdrop-blur-sm']}>
 					{@render sortButton('NAME', 'name', 'text-black', true)}
 					{@render sortButton('COUNT', 'count', 'text-blue-700')}
@@ -78,15 +104,16 @@
 		class:max-w-12={!wide}
 		class:grow={wide}
 		onclick={() => handleSort(colKey)}
+		aria-labelledby={label}
+		title={label}
 	>
-		{label}
+		<span class={`icon-${colKey}`}></span>
 	</button>
 {/snippet}
 
 <!-- SNIPPER LINE -->
 {#snippet tagStatLine(tag: TagStat)}
-	<span class="max-w-44 flex-1 grow text-sm font-bold underline underline-offset-2">{tag.name}</span
-	>
+	<span class="max-w-50 flex-1 grow text-sm font-bold">{tag.name}</span>
 	<span class="max-w-12 flex-1 text-sm font-bold text-blue-700">{tag.count}</span>
 	<span class="max-w-12 flex-1 text-sm text-pink-600">{tag.like}</span>
 	<span class="max-w-12 flex-1 text-sm">{tag.repost}</span>

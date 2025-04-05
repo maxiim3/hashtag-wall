@@ -22,7 +22,7 @@ export class BuildPost {
 	}
 }
 
-export interface TagStat {
+export interface TagStat extends Record<string, number | string> {
 	like: number;
 	repost: number;
 	quote: number;

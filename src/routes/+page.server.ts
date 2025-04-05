@@ -1,59 +1,24 @@
-import { error } from '@sveltejs/kit';
-import type { PostView } from '@atproto/api/dist/client/types/app/bsky/feed/defs';
+import { Feed } from '$lib/models/post.response';
+import { client } from '$lib/server/bluesky/sdk';
 import type { Actions } from './$types';
-
-const BASE_URL = 'https://public.api.bsky.app/xrpc/app.bsky.feed.searchPosts';
-
-function buildQSP(params: Record<string, string>) {
-	return Object.entries(params).map(([key, value]) => {
-		return `${key}=${encodeURIComponent(value)}`;
-	});
-}
-
-type APIError = {
-	error: string;
-	message: string;
-};
-
-type APISuccess = {
-	posts: PostView[];
-	cursor: number;
-};
-
-async function fetchSearchPosts(q: Record<string, string>) {
-	const queries = buildQSP(q);
-	const params = queries.join('&');
-	const url = `${BASE_URL}?${params}`;
-	const results = await fetch(url);
-
-	const data: APISuccess | APIError = await results.json();
-
-	if (!results.ok) error(results.status, (data as APIError).message);
-
-	return { results: data as APISuccess };
-}
 
 export const actions: Actions = {
 	default: async ({ request }: { request: Request }) => {
 		const data = await request.formData();
 		const text = data.get('search') as string;
-		const latestQ = {
-			limit: '100',
-			sort: 'latest',
-			q: text
-		};
-		const { results: latestResults } = await fetchSearchPosts(latestQ);
 
-		const topQ = {
-			limit: '100',
+		const resp = await client.searchByTags({
+			limit: 100,
 			sort: 'top',
 			q: text
-		};
-		const { results: topResults } = await fetchSearchPosts(topQ);
-		console.log('action', latestResults);
+		});
 
+		const feed = new Feed(resp.data.posts);
+		console.log(feed.tagStatistic());
+		//
+		// create worker
 		return {
-			results: [...topResults.posts, ...latestResults.posts],
+			results: feed.tagStatistic(),
 			search: text
 		};
 	}
