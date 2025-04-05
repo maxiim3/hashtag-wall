@@ -10,7 +10,7 @@
 	let sortLabel = $state<keyof TagStat>('count');
 
 	let searchIdl = $derived(form && form.search);
-	let tags = $derived(form?.results || []);
+	let tags = $derived(form?.tags || []);
 	let count = $derived(tags.length || 0);
 	let sortedFeed = $derived(sortResponseBy<TagStat>(tags, sortLabel));
 
@@ -78,9 +78,18 @@
 					{@render sortButton('REPOST', 'repost', 'text-lime-900 uppercase')}
 					{@render sortButton('QUOTE', 'quote', 'text-slate-900 uppercase')}
 				</li>
+
 				{#each sortedFeed as tag (tag.name)}
 					<li class={[styles]}>
 						{@render tagStatLine(tag)}
+					</li>
+					<li class="flex w-full rounded-full border px-2 py-1">
+						<span class="flex gap-2"><span class="icon-name text-sm"></span>{tag.name}</span>
+						<span class="flex gap-2"><span class="icon-count text-sm"></span>{tag.count}</span>
+						<span class="flex gap-2"><span class="icon-like text-sm"></span>{tag.like}</span>
+						<span class="flex gap-2"><span class="icon-repost text-sm"></span>{tag.repost}</span>
+						<span class="flex gap-2"><span class="icon-reply text-sm"></span>{tag.reply}</span>
+						<span class="flex gap-2"><span class="icon-quote text-sm"></span>{tag.quote}</span>
 					</li>
 				{:else}
 					<li>Nothing there...</li>

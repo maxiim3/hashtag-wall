@@ -40,7 +40,6 @@ export class Client implements ClientUS {
 			password: env.BS_PASSWORD
 		});
 
-		console.log(connection.data);
 		return connection;
 	}
 }

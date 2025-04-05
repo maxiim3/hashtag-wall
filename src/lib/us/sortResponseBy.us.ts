@@ -4,11 +4,9 @@ export function sortResponseBy<T extends Record<string, string | number>>(
 	direction?: 0 | 1 | -1
 ) {
 	const sort = direction ?? -1;
-	console.log(items);
 
 	return items.sort((prev, next) => {
 		if (typeof prev[key] === 'number' && typeof next[key] === 'number') {
-			console.log('number');
 			return (prev[key] - next[key]) * sort;
 		}
 

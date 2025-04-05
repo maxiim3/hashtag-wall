@@ -14,11 +14,9 @@ export const actions: Actions = {
 		});
 
 		const feed = new Feed(resp.data.posts);
-		console.log(feed.tagStatistic());
-		//
-		// create worker
+
 		return {
-			results: feed.tagStatistic(),
+			tags: feed.tags,
 			search: text
 		};
 	}
